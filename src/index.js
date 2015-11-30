@@ -3,6 +3,13 @@
 ;(function() {
   'use strict'
 
+  // PATCHED: default options, which can be overwritten on instanciation
+  var options = {
+    colorize: true,
+    showIcons: true,
+    timestamp: true
+  };
+
   var instances = []
   var lastUsedColorIndex = 0
   // Solarized accent colors http://ethanschoonover.com/solarized
@@ -71,7 +78,6 @@
     this.markdown = opts.markdown === undefined ? true : opts.markdown
     this.prefix = prefix
 
-    //
     instances.push(this)
 
     if (isBrowser()) {
@@ -85,7 +91,11 @@
   }
 
   // Static
-  // ------
+  Logdown.configure = function(conf) {
+    options.colorize = (conf.colorize === undefined ? options.colorize : conf.colorize);
+    options.showIcons = (conf.showIcons === undefined ? options.showIcons : conf.showIcons);
+    options.timestamp = (conf.timestamp === undefined ? options.timestamp : conf.timestamp);
+  }
 
   Logdown.enable = function() {
     Array.prototype.forEach.call(arguments, function(str) {
@@ -162,33 +172,34 @@
       } else if (isNode()) {
         text = sanitizeStringToNode(text)
         preparedOutput = prepareOutputToNode(text, this)
-
-        if (method === 'warn') {
-          preparedOutput.parsedText =
-            '\u001b[' + ansiColors.colors.yellow[0] + 'm' +
-            '⚠' +
-            '\u001b[' + ansiColors.colors.yellow[1] + 'm ' +
-            preparedOutput.parsedText
-        } else if (method === 'error') {
-          preparedOutput.parsedText =
-            '\u001b[' + ansiColors.colors.red[0] + 'm' +
-            '✖' +
-            '\u001b[' + ansiColors.colors.red[1] + 'm ' +
-            preparedOutput.parsedText
-        } else if (method === 'info') {
-          preparedOutput.parsedText =
-            '\u001b[' + ansiColors.colors.blue[0] + 'm' +
-            'ℹ' +
-            '\u001b[' + ansiColors.colors.blue[1] + 'm ' +
-            preparedOutput.parsedText
-        } else if (method === 'debug') {
-          preparedOutput.parsedText =
-            '\u001b[' + ansiColors.colors.gray[0] + 'm' +
-            '🐛' +
-            '\u001b[' + ansiColors.colors.gray[1] + 'm ' +
-            preparedOutput.parsedText
+        // PATCH: do not apply any formatting to string
+        if (options.showIcons) {
+          if (method === 'warn') {
+            preparedOutput.parsedText =
+              '\u001b[' + ansiColors.colors.yellow[0] + 'm' +
+              '⚠' +
+              '\u001b[' + ansiColors.colors.yellow[1] + 'm ' +
+              preparedOutput.parsedText
+          } else if (method === 'error') {
+            preparedOutput.parsedText =
+              '\u001b[' + ansiColors.colors.red[0] + 'm' +
+              '✖' +
+              '\u001b[' + ansiColors.colors.red[1] + 'm ' +
+              preparedOutput.parsedText
+          } else if (method === 'info') {
+            preparedOutput.parsedText =
+              '\u001b[' + ansiColors.colors.blue[0] + 'm' +
+              'ℹ' +
+              '\u001b[' + ansiColors.colors.blue[1] + 'm ' +
+              preparedOutput.parsedText
+          } else if (method === 'debug') {
+            preparedOutput.parsedText =
+              '\u001b[' + ansiColors.colors.gray[0] + 'm' +
+              '🐛' +
+              '\u001b[' + ansiColors.colors.gray[1] + 'm ' +
+              preparedOutput.parsedText
+          }
         }
-
         //
         args.push(preparedOutput.parsedText)
         if (preparedOutput.notText) {
@@ -208,6 +219,11 @@
 
   function parseMarkdown(text) {
     var styles = []
+    
+    if (!options.colorize) {
+        return {text: text, styles: styles};
+    }
+    
     var match = getNextMatch(text)
 
     while (match) {
@@ -343,6 +359,8 @@
       }
     }
 
+    parsedText += getTimestamp();
+
     return {
       parsedText: parsedText,
       styles: styles,
@@ -376,6 +394,8 @@
     } else {
       notText = data
     }
+
+    parsedText += getTimestamp();
 
     return {
       parsedText: parsedText,
@@ -462,6 +482,19 @@
       return str
     }
   }
+  
+  function getTimestamp() {
+    if (options.timestamp === false) {
+      return ''
+    }
+    
+    if (typeof options.timestamp === 'function') {
+      return options.timestamp()
+    }
+    
+    var date = new Date()
+    return ' [' + date.toISOString() + ']'
+  }
 
   /**
    * Currently only WebKit-based Web Inspectors, Firefox >= v31,
@@ -471,6 +504,11 @@
    * Code took from https://github.com/visionmedia/debug/blob/master/browser.js
    */
   function isColorSupported() {
+    // PATCHED
+    if (!options.colorize) {
+        return false;
+    }
+    
     if (isBrowser()) {
       // Is webkit? http://stackoverflow.com/a/16459606/376773
       var isWebkit = ('WebkitAppearance' in document.documentElement.style)

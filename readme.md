@@ -12,13 +12,20 @@ or in the preview below.
 
 
 ## Preview
+**!!!IMPORTANT!!!** This is a patched version of [logdown](//caiogondim.github.io/logdown) and includes additional features as global configuration of logs.
 
 ### Browser
 <img src="http://rawgit.com/caiogondim/logdown/master/img/browser-preview.gif">
 
 ### Server
 <img src="http://rawgit.com/caiogondim/logdown/master/img/node-preview.gif">
+You can see the original utility in action in the [example page](//caiogondim.github.io/logdown)
+or in the preview below.
 
+## Additional features (only in patched library)
+This library is patched from the original third-party library. Additional features added are:
+- option to add timestamp to logs
+- option to enable/disable colors (disabling colors also disables markup formatting)
 
 ## Using
 
@@ -59,7 +66,7 @@ a nice prefixed message on console and it is possible to silence instances
 based on the prefix name, as we will see after.
 
 After creating your object, you can use the regular `log`, `warn`, `info` and
-`error` methods as we have on `console`, but now with Markdown support.
+`error` methods as we have on `console`, but now with Markdown support (but only if colorized options is enabled).
 
 ```js
 logger.log('lorem *ipsum*')
@@ -107,7 +114,7 @@ Type: 'Boolean'
 
 Default: `true`
 
-If setted to `false`, markdown will not be parsed.
+If set to `false`, markdown will not be parsed.
 
 ```js
 var logger = new Logdown({markdown: false})
@@ -127,6 +134,60 @@ logger.log('lorem _ipsum_')
 logger.log('lorem `ipsum`')
 ```
 
+## Configuring logs (only in patched version)
+
+In this patched version it is possible to set configuration which can control the following options:
+
+### `colorize`
+
+Type: 'Boolean'
+
+Default: `true`
+
+If set to `false`, the logs will not be formatted with any colours or styles. (This option also disables showing of icons in logs)
+
+```js
+Logdown.configure({colorize: false});
+```
+
+### `showIcons`
+
+Type: 'Boolean'
+
+Default: `true`
+
+If set to `false`, the logs will not show any icons in log text. (Icons are not shown by default when colorize config option is set)
+
+```js
+Logdown.configure({showIcons: false});
+```
+
+### `timestamp`
+
+Type: 'Boolean or Function'
+
+Default: `true`
+
+If set to `false`, the logs will not show timestamp information in logs.
+If set to `true` (or not provided at all), then the date will be shown in default ISO string format.
+Additional to that this option will accept a function which will be used to output a custom timestamp information.
+
+```js
+// This will not put any timestamp information in logs
+Logdown.configure({timestamp: false});
+
+// This will output a default timestamp in ISO string format (e.g. `[2015-11-26T08:17:32.140Z]`)
+Logdown.configure({
+    timestamp: true
+});
+
+// Output a custom timestamp (using moment.js)
+Logdown.configure({
+    timestamp: function() {
+        return moment().format('ddd, MMM Do YYYY, h:mm:ss a');
+    }
+});
+```
 
 ## Enabling/disabling instances
 
